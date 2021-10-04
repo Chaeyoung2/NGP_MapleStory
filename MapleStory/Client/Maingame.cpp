@@ -4,10 +4,9 @@
 #include "Fire.h"
 #include "Field.h"
 #include "Stage1.h"
-#include <mutex>
 
 SOCKET g_sock;
-char buf[BUFSIZE];	// 데이터 버퍼
+char buf[BUFSIZE];
 HANDLE hThread;
 
 mutex m;
@@ -19,7 +18,6 @@ PLAYERINFO g_myinfo;
 vector<PLAYERINFO> g_vecplayer;
 int g_myid = -1;	// 내 플레이어 정보 key(인덱스 값)
 
-
 vector<MONSTERINFO> g_vecgreen(MAX_GREEN);
 
 float g_fScrollX = 0.f;
@@ -27,76 +25,41 @@ float g_fScrollY = 0.f;
 bool  g_bIsSceneChange = false;
 SCENE_TYPE g_eScene = SCENE_FIELD;
 
-void CMaingame::Initialize(void)
+template <typename T>
+static CObj* CreateSkill(MYPOINT pt, OBJECT_DIR dir)
 {
-	m_hDC = GetDC(g_hWnd);
-
-	AllocConsole();
-	freopen("CONOUT$", "wt", stdout);
-
-	// 관련 이미지 로드
-	CBitmapMgr::GetInstance()->GetMapBit().insert(make_pair(L"Back", (new CMyBmp)->LoadBmp(L"../Image/Back.bmp")));
-	CBitmapMgr::GetInstance()->GetMapBit().insert(make_pair(L"BackBuffer", (new CMyBmp)->LoadBmp(L"../Image/BackBuffer.bmp")));
-
-	// 씬 전환 (->Logo)
-	CSceneMgr::GetInstance()->SetScene(SCENE_LOGO);
-	CollisionMgr::InitWELLRNG512((unsigned long)time(NULL));
-
-	InitializeNetwork();
+	CObj* pSkill = CAbstractFactory<T>::CreateObj(
+		pt.x, pt.y);
+	pSkill->SetAtt(100);
+	pSkill->SetDir(dir);
+	return pSkill;
 }
 
-void CMaingame::Update(void)
+int recvn(SOCKET s, char* buf, int len, int flags)
 {
-	CSceneMgr::GetInstance()->Update();
-	CSoundMgr::GetInstance()->UpdateSound();
+	int received = 0;
+	char* ptr = buf;
+	int left = len;
+
+	while (left > 0) {
+		received = recv(s, ptr, left, flags);
+
+		if (received == SOCKET_ERROR)
+			return SOCKET_ERROR;
+		else if (received == 0)
+			break;
+
+		left -= received;
+		ptr += received;
+	}
+	return len - left;
 }
 
-void CMaingame::Render(void)
+void RecvPacket()
 {
-	// 더블 버퍼링
-	HDC hBackBuff = (CBitmapMgr::GetInstance()->GetMapBit()[L"BackBuffer"])->GetMemDC();
-	HDC hMemDC = (CBitmapMgr::GetInstance()->GetMapBit()[L"Back"])->GetMemDC();
-
-	BitBlt(hBackBuff, 0, 0, WINCX, WINCY, hMemDC, 0, 0, SRCCOPY);
-
-	CSceneMgr::GetInstance()->Render(hBackBuff);
-
-	BitBlt(m_hDC, 0, 0, WINCX, WINCY, hBackBuff, 0, 0, SRCCOPY);
-}
-
-void CMaingame::Release(void)
-{
-	CKeyMgr::GetInstance()->DestroyInstance();
-	CBitmapMgr::GetInstance()->DestroyInstance();
-	CSoundMgr::GetInstance()->DestroyInstance();
-	CSceneMgr::GetInstance()->DestroyInstance();
-	ReleaseDC(g_hWnd, m_hDC);
-
-	// 프로그램 종료 서버에 알리기
-	char buf[BUFSIZE] = {};
-	PACKETINFO packetinfo;
-	packetinfo.id = g_myid;
-	packetinfo.size = 0;
-	packetinfo.type = CS_PACKET_CLIENT_END;
-	memcpy(buf, &packetinfo, sizeof(packetinfo));
-
-	int retval = send(g_sock, buf, BUFSIZE, 0);
-	if (retval == SOCKET_ERROR)
-		MessageBox(g_hWnd, L"send()", L"send - SC_PACKET_CLIENT_END", MB_OK);
-
-	closesocket(g_sock);
-	WSACleanup();
-
-}
-
-DWORD WINAPI CMaingame::RecvThread(LPVOID arg)
-{
-	SOCKET client_sock = (SOCKET)arg;
-
 	while (true) {
-
 		m.lock();
-		if (-1 == g_myid) { 
+		if (-1 == g_myid) {
 			m.unlock();
 			continue;
 		}
@@ -106,18 +69,18 @@ DWORD WINAPI CMaingame::RecvThread(LPVOID arg)
 		int retval = recvn(g_sock, buf, BUFSIZE, 0);
 		memcpy(&packetinfo, buf, sizeof(packetinfo));
 		if (retval == SOCKET_ERROR) {
-			MessageBoxW(g_hWnd, L"recvn() - SC_PACKET_PLAYERINFO_ID", MB_OK, MB_OK);
-			return 0;
+			MessageBoxW(g_hWnd, L"recvn() - SC_PACKET_PLAYERINFO", MB_OK, MB_OK);
+			return;
 		}
 		switch (packetinfo.type)
 		{
-		case SC_PACKET_NEW_OTHER_PLAYERINFO: // 새로 접속한 다른 플레이어 info를 받아온다.
+		case SC_PACKET_NEW_OTHER_PLAYERINFO: 
 		{
-			// ------------------Process---------------------
-			// 필요한 변수들
+			cout << "SC_PACKET_NEW_OTHER_PLAYERINFO" << endl;
+
 			int newplayerid{ 0 };
 			PLAYERINFO newplayerinfo = {};
-			// 1. 새로 접속한 플레이어의 id를, 고정 길이 패킷을 통해 알아낸다.
+
 			newplayerid = packetinfo.id;
 
 			// 2. 가변 길이 패킷을 받아온다. (playerinfo)
@@ -154,7 +117,6 @@ DWORD WINAPI CMaingame::RecvThread(LPVOID arg)
 		break;
 		case SC_PACKET_OTHER_PLAYERINFO:
 		{
-			cout << "SC_PACKET_OTHER_PLAYERINFO" << endl;
 			// 상태가 바뀐 다른 플레이어 info를 받아온다.
 			int id = packetinfo.id; // 바꿀 클라이언트의 id를 받아온다.
 
@@ -164,6 +126,9 @@ DWORD WINAPI CMaingame::RecvThread(LPVOID arg)
 				MessageBoxW(g_hWnd, L"recvn() - SC_PACKET_OTHER_PLAYERINFO", MB_OK, MB_OK);
 			else {
 				memcpy(&(g_vecplayer[id]), buf, sizeof(g_vecplayer[id]));
+
+				if (g_vecplayer[id].nickname == "")
+					break;
 #ifdef DEBUG
 				cout << "OTHER PLAYERINFO - 가변 길이를 받아왔어요!" << endl;
 #endif
@@ -274,8 +239,74 @@ DWORD WINAPI CMaingame::RecvThread(LPVOID arg)
 		}
 	}
 
-	return 0;
+	return;
 }
+
+void CMaingame::Initialize(void)
+{
+	m_hDC = GetDC(g_hWnd);
+
+	AllocConsole();
+	freopen("CONOUT$", "wt", stdout);
+
+	// 관련 이미지 로드
+	CBitmapMgr::GetInstance()->GetMapBit().insert(make_pair(L"Back", (new CMyBmp)->LoadBmp(L"../Image/Back.bmp")));
+	CBitmapMgr::GetInstance()->GetMapBit().insert(make_pair(L"BackBuffer", (new CMyBmp)->LoadBmp(L"../Image/BackBuffer.bmp")));
+
+	// 씬 전환 (->Logo)
+	CSceneMgr::GetInstance()->SetScene(SCENE_LOGO);
+	CollisionMgr::InitWELLRNG512((unsigned long)time(NULL));
+
+	InitializeNetwork();
+}
+
+void CMaingame::Update(void)
+{
+	CSceneMgr::GetInstance()->Update();
+	CSoundMgr::GetInstance()->UpdateSound();
+}
+
+void CMaingame::Render(void)
+{
+	// 더블 버퍼링
+	HDC hBackBuff = (CBitmapMgr::GetInstance()->GetMapBit()[L"BackBuffer"])->GetMemDC();
+	HDC hMemDC = (CBitmapMgr::GetInstance()->GetMapBit()[L"Back"])->GetMemDC();
+
+	BitBlt(hBackBuff, 0, 0, WINCX, WINCY, hMemDC, 0, 0, SRCCOPY);
+
+	CSceneMgr::GetInstance()->Render(hBackBuff);
+
+	BitBlt(m_hDC, 0, 0, WINCX, WINCY, hBackBuff, 0, 0, SRCCOPY);
+}
+
+void CMaingame::Release(void)
+{
+	recvThread.join();
+
+	CKeyMgr::GetInstance()->DestroyInstance();
+	CBitmapMgr::GetInstance()->DestroyInstance();
+	CSoundMgr::GetInstance()->DestroyInstance();
+	CSceneMgr::GetInstance()->DestroyInstance();
+	ReleaseDC(g_hWnd, m_hDC);
+
+	// 프로그램 종료 서버에 알리기
+	char buf[BUFSIZE] = {};
+	PACKETINFO packetinfo;
+	packetinfo.id = g_myid;
+	packetinfo.size = 0;
+	packetinfo.type = CS_PACKET_CLIENT_END;
+	memcpy(buf, &packetinfo, sizeof(packetinfo));
+
+	int retval = send(g_sock, buf, BUFSIZE, 0);
+	if (retval == SOCKET_ERROR)
+		MessageBox(g_hWnd, L"send()", L"send - SC_PACKET_CLIENT_END", MB_OK);
+
+	closesocket(g_sock);
+	WSACleanup();
+
+}
+
+
 
 void CMaingame::InitializeNetwork(void)
 {
@@ -287,9 +318,7 @@ void CMaingame::InitializeNetwork(void)
 	if (g_sock == INVALID_SOCKET) // 생성 실패시
 		MessageBoxW(g_hWnd, L"socket()", MB_OK, MB_OK);
 
-	hThread = CreateThread(NULL, 0, RecvThread, (LPVOID)g_sock, 0, NULL);
-	if (NULL == hThread)
-		CloseHandle(hThread);
+	recvThread = thread{ RecvPacket };
 
 	for (int i = 0; i < MAX_USER; ++i)
 		g_vecplayer.emplace_back(PLAYERINFO());
@@ -298,22 +327,3 @@ void CMaingame::InitializeNetwork(void)
 		g_vecplayer[i].id = -1;
 }
 
-int CMaingame::recvn(SOCKET s, char *buf, int len, int flags)
-{
-	int received;
-	char *ptr = buf;
-	int left = len;
-
-	while (left > 0) {
-		received = recv(s, ptr, left, flags);
-
-		if (received == SOCKET_ERROR)
-			return SOCKET_ERROR;
-		else if (received == 0)
-			break;
-
-		left -= received;
-		ptr += received;
-	}
-	return len - left;
-}

@@ -11,6 +11,9 @@
 #include <iostream>
 #include <math.h>
 #include <io.h>
+#include <thread>
+#include <mutex>
+
 using namespace std;
 
 #include "Enum.h"
