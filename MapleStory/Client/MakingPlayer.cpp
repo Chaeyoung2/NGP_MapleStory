@@ -109,7 +109,7 @@ int CMakingPlayer::Update()
 				// 가변 길이.
 				ZeroMemory(buf, sizeof(buf));
 				memcpy(buf, &tempplayerinfo, sizeof(tempplayerinfo));
-				retval = send(g_sock, buf, BUFSIZE, 0);
+				retval = send(g_sock, buf, sizeof(tempplayerinfo), 0);
 				if (retval == SOCKET_ERROR) {
 					err_display("send() - 고정 - PLAYERINFO_INITIALLY");
 					//MessageBoxW(g_hWnd, L"send()", L"send - 가변 - CS_PACKET_PLAYERINFO_INITIALLY", MB_OK);

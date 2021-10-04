@@ -11,7 +11,6 @@ using namespace std;
 
 #define DEBUG
 
-// 클라이언트
 vector<SOCKET> g_vecsocket;
 vector<PLAYERINFO> g_vecplayer;
 vector<SKILLINFO> g_vecskill;
@@ -36,8 +35,8 @@ DWORD WINAPI RecvThread(LPVOID arg)
 	int retval{ 0 };
 	PACKETINFO packetinfo;
 	PLAYERINFO playerinfo;
+
 	while (true) {
-		// 고정 길이 (패킷 유형, 사이즈)
 		char buf[BUFSIZE];
 		ZeroMemory(&packetinfo, sizeof(packetinfo));
 		retval = recvn(client_sock, buf, BUFSIZE, 0);
@@ -47,15 +46,12 @@ DWORD WINAPI RecvThread(LPVOID arg)
 		}
 		else
 			memcpy(&packetinfo, buf, sizeof(packetinfo));
-		// 가변 길이 (패킷 데이터)
+
 		switch (packetinfo.type) {
-			
-		case CS_PACKET_PLAYERINFO_INITIALLY:  	// 클라이언트의 초기 설정 playerinfo
+		case CS_PACKET_PLAYERINFO_INITIALLY: 
 		{
-			// --------------------Process---------------------
-			// 1. 초기 설정된 playeinfo를 수신한다.
 			ZeroMemory(buf, sizeof(buf));	 
-			retval = recvn(client_sock, buf, BUFSIZE, 0);
+			retval = recvn(client_sock, buf, packetinfo.size, 0);
 			if (retval == SOCKET_ERROR) {
 				err_display("intial playerinfo recv()");
 				break;
@@ -190,10 +186,10 @@ DWORD WINAPI RecvThread(LPVOID arg)
 			// 3. g_vecplayer[받은 playerinfo의 id]에 접근하여 정보를 갱신한다.
 			m.lock();
 			g_vecplayer[id] = tempplayerinfo;
-			m.unlock();
+
+			cout << id << "번째 플레이어(" << g_vecplayer[id].nickname << ") 이동" << endl;
 
 			// 4. 다른 클라이언트에게도 보낸다. (SC_PACKET_OTHER_PLAYERINFO)
-			m.lock();
 			if (g_vecplayer.size() == 2) { // 2인 접속 시에만.
 				ZeroMemory(&packetinfo, sizeof(packetinfo));
 				packetinfo.id = id;
