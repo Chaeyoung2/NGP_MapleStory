@@ -33,6 +33,7 @@ typedef struct Info {
 }INFO;
 
 
+
 typedef struct PlayerInfo {
 	short		id;
 	MYPOINT		pt;
@@ -40,19 +41,19 @@ typedef struct PlayerInfo {
 	FRAME		frame;
 	char		nickname[512];
 	PLAYER_JOB	job;
-	PLAYER_STATE state; 
+	PLAYER_STATE state; // 1201 추가
 	PLAYER_STATE prestate;
 	int			hp;
 	int			money;
 	float		attackAccValue;
 	bool		ready;
-	bool		connected; 
-	int		speed; 
-	OBJECT_DIR dir; 
+	bool		connected; // 1119 추가
+	int		speed; // 1203 추가
+	OBJECT_DIR dir; // 1207 추가
 }PLAYERINFO;
 
 typedef struct MonsterInfo {
-	int			id;
+	int			id; //vector index 값
 	MYPOINT		pt;
 	int			hp;
 	int			money;
