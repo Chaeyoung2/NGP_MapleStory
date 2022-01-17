@@ -112,7 +112,7 @@ DWORD WINAPI RecvThread(LPVOID arg)
 			}
 			ZeroMemory(buf, sizeof(buf));
 			memcpy(buf, &(playerinfo), sizeof(playerinfo));
-			retval = send(client_sock, buf, packetinfo.size, 0);
+			retval = send(client_sock, buf, BUFSIZE, 0);
 			if (retval == SOCKET_ERROR) {
 				err_display("send() 실패 - 가변 길이 - SC_PACKET_YOUR_PLAYERINFO");
 				break;
@@ -137,7 +137,7 @@ DWORD WINAPI RecvThread(LPVOID arg)
 				}
 				ZeroMemory(buf, sizeof(buf)); 
 				memcpy(buf, &playerinfo, sizeof(g_vecplayer[playerinfo.id]));
-				retval = send(g_vecsocket[recvid], buf, packetinfo.size, 0);
+				retval = send(g_vecsocket[recvid], buf, BUFSIZE, 0);
 				if (retval == SOCKET_ERROR) {
 					err_display("send() - SC_PACKET_PLAYERINFO");
 					break;
@@ -158,7 +158,7 @@ DWORD WINAPI RecvThread(LPVOID arg)
 				}
 				ZeroMemory(buf, sizeof(buf));
 				memcpy(buf, &(g_vecplayer[temppacketinfo.id]), sizeof(g_vecplayer[temppacketinfo.id]));
-				retval = send(g_vecsocket[1], buf, packetinfo.size, 0);
+				retval = send(g_vecsocket[1], buf, BUFSIZE, 0);
 				if (retval == SOCKET_ERROR) {
 					err_display("send() - SC_PACKET_NEW_OTHER_PLAYERINFO");
 					break;
@@ -176,7 +176,7 @@ DWORD WINAPI RecvThread(LPVOID arg)
 			// 2. 가변 길이 패킷에서 playerinfo를 받는다.
 			PLAYERINFO tempplayerinfo = {};
 			ZeroMemory(buf, sizeof(buf));
-			retval = recvn(client_sock, buf, packetinfo.size, 0);
+			retval = recvn(client_sock, buf, BUFSIZE, 0);
 			if (retval == SOCKET_ERROR) {
 				cout << "실패 - recvn - CS_PACKET_PLAYERINFO_MOVE" << endl;
 				break;
@@ -209,10 +209,10 @@ DWORD WINAPI RecvThread(LPVOID arg)
 				ZeroMemory(buf, sizeof(buf));
 				memcpy(buf, &(g_vecplayer[id]), sizeof(playerinfo));
 				if (0 == id) {	// 0 정보는 1에게 보내야 한다.
-					retval = send(g_vecsocket[id + 1], buf, packetinfo.size, 0);
+					retval = send(g_vecsocket[id + 1], buf, BUFSIZE, 0);
 				}
 				else if (1 == id) {
-					retval = send(g_vecsocket[id - 1], buf, packetinfo.size, 0);
+					retval = send(g_vecsocket[id - 1], buf, BUFSIZE, 0);
 				}
 				if (retval == SOCKET_ERROR) {
 					cout << "failed : send - 가변 - SC_PACKET_OTHER_PLAYERINFO" << endl;
@@ -231,7 +231,7 @@ DWORD WINAPI RecvThread(LPVOID arg)
 			// 2. 가변 길이에서 playerinfo를 저장한다.
 			PLAYERINFO tempplayerinfo = {};
 			ZeroMemory(buf, sizeof(buf));
-			retval = recvn(client_sock, buf, packetinfo.size, 0);
+			retval = recvn(client_sock, buf, BUFSIZE, 0);
 			if (retval == SOCKET_ERROR) {
 				cout << "실패 - recvn - CS_PACKET_PLAYERINFO_INCHANGINGSCENE" << endl;
 				break;
@@ -261,10 +261,10 @@ DWORD WINAPI RecvThread(LPVOID arg)
 				ZeroMemory(buf, sizeof(buf));
 				memcpy(buf, &(g_vecplayer[id]), sizeof(playerinfo));
 				if (0 == id) {
-					retval = send(g_vecsocket[id + 1], buf, packetinfo.size, 0);
+					retval = send(g_vecsocket[id + 1], buf, BUFSIZE, 0);
 				}
 				else if (1 == id) {
-					retval = send(g_vecsocket[id - 1], buf, packetinfo.size, 0);
+					retval = send(g_vecsocket[id - 1], buf, BUFSIZE, 0);
 				}
 				m.unlock();
 				if (retval == SOCKET_ERROR) {
@@ -331,7 +331,7 @@ DWORD WINAPI RecvThread(LPVOID arg)
 			int skillid;
 			// 1. 새로 생성된 스킬의 skillinfo를 recv 해 온다.
 			ZeroMemory(buf, sizeof(buf));
-			retval = recvn(client_sock, buf, packetinfo.size, 0);
+			retval = recvn(client_sock, buf, BUFSIZE, 0);
 			if (retval == SOCKET_ERROR) {
 				err_display("recvn() - CS_PACKET_SKILL_CREATE");
 				break;
@@ -369,7 +369,7 @@ DWORD WINAPI RecvThread(LPVOID arg)
 				// 가변 길이.
 				ZeroMemory(buf, sizeof(buf));
 				memcpy(buf, &skillinfo, sizeof(skillinfo));
-				retval = send(g_vecsocket[recvid], buf, packetinfo.size, 0);
+				retval = send(g_vecsocket[recvid], buf, BUFSIZE, 0);
 				if (retval == SOCKET_ERROR) {
 					err_display("send() - SC_PACKET_SKILL_CREATE");
 					break;
