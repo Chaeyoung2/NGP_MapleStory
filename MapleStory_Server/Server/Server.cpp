@@ -62,7 +62,7 @@ void RecvThread(SOCKET client_sock)
 			playerinfo.connected = true;
 			playerinfo.ready = false;
 			playerinfo.pt.x = 100.f; // 초기 좌표
-			playerinfo.pt.y = 500.f;
+			playerinfo.pt.y = 496.f;
 			playerinfo.hp = 30000;
 			playerinfo.size.cx = 100.f;
 			playerinfo.size.cy = 100.f;
@@ -208,7 +208,7 @@ void RecvThread(SOCKET client_sock)
 			int id = packetinfo.id;
 			// 고정 길이 패킷만 받아온다.
 
-			PACKETINFO packetinfo_send = { SC_PACKET_PLAYERINFO_INCHANGINGSCENE, sizeof(float), id };
+			PACKETINFO packetinfo_send = { SC_PACKET_PLAYERINFO_INCHANGINGSCENE, sizeof(MYPOINT), id };
 			char buf_send_unch[BUFSIZE];
 			memcpy(buf_send_unch, &packetinfo_send, sizeof(packetinfo_send));
 			retval = send(g_vecsocket[id], buf_send_unch, BUFSIZE, 0);
@@ -216,13 +216,13 @@ void RecvThread(SOCKET client_sock)
 				cout << "failed : send - 고정 - SC_PACKET_PLAYERINFO_INITIALLY" << endl;
 				break;
 			}
-			float x = 100.f;
+			MYPOINT pt = { 100.f, 476.f };
 
 			char buf_send_ch[BUFSIZE];
 			m.lock();
-			g_vecplayer[id].pt.x = x;
+			g_vecplayer[id].pt = pt;
 			m.unlock();
-			memcpy(buf_send_ch, &x, sizeof(x));
+			memcpy(buf_send_ch, &pt, sizeof(pt));
 			retval = send(g_vecsocket[id], buf_send_ch, BUFSIZE, 0);
 			if (retval == SOCKET_ERROR) {
 				cout << "failed : send - 가변 - SC_PACKET_PLAYERINFO_INITIALLY" << endl;

@@ -128,9 +128,6 @@ int CPlayer::Update(void)
 
 void CPlayer::Render(HDC hDc)
 {
-#ifdef DEBUG
-	cout << "m_tInfo : (" << m_tInfo.pt.x << ", " << m_tInfo.pt.y << ")" << endl;
-#endif
 	CMyBmp* pBit = CBitmapMgr::GetInstance()->FindImage(m_pImgName);
 	if (NULL == pBit)  return;
 

@@ -241,7 +241,7 @@ void RecvPacket()
 			if (retval == SOCKET_ERROR)
 				MessageBoxW(g_hWnd, L"recvn() - SC_PACKET_YOUR_PLAYERINFO", MB_OK, MB_OK);
 			else {
-				memcpy(&(g_vecplayer[id].pt.x), buf, sizeof(g_vecplayer[id].pt.x));
+				memcpy(&(g_vecplayer[id].pt), buf, sizeof(g_vecplayer[id].pt));
 			}
 			// 순서 문제 때문에 추가.
 			/// Field 씬일 때, CField가 가지고 있는 CPlayer에 직접 접근하여 
