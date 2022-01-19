@@ -98,9 +98,8 @@ void RecvThread(SOCKET client_sock)
 				break;
 			}
 
-			// 5. 기존에 접속해 있는 클라이언트에게 새 클라이언트의 playerinfo를 전송한다.
-			m.lock();
 			if (g_vecplayer.size() >= 2) {
+				// 5. 기존에 접속해 있는 클라이언트에게 새 클라이언트의 playerinfo를 전송한다.
 				ZeroMemory(&packetinfo, sizeof(packetinfo));
 				packetinfo.type = SC_PACKET_NEW_OTHER_PLAYERINFO;
 				packetinfo.size = sizeof(playerinfo);
@@ -144,7 +143,8 @@ void RecvThread(SOCKET client_sock)
 					break;
 				}
 			}
-			m.unlock();
+
+
 		}
 		break;
 
@@ -205,53 +205,28 @@ void RecvThread(SOCKET client_sock)
 
 		case CS_PACKET_PLAYERINFO_INCHANGINGSCENE: // 씬이 바뀌었을 때
 		{
-			// ----------------------- Process -------------------------
-			// 1. 고정 길이 패킷에서 어느 클라인지 id를 알아온다.
 			int id = packetinfo.id;
-			// 2. 가변 길이에서 playerinfo를 저장한다.
-			PLAYERINFO tempplayerinfo = {};
-			ZeroMemory(buf, sizeof(buf));
-			retval = recvn(client_sock, buf, BUFSIZE, 0);
+			// 고정 길이 패킷만 받아온다.
+
+			PACKETINFO packetinfo_send = { SC_PACKET_PLAYERINFO_INCHANGINGSCENE, sizeof(float), id };
+			char buf_send_unch[BUFSIZE];
+			memcpy(buf_send_unch, &packetinfo_send, sizeof(packetinfo_send));
+			retval = send(g_vecsocket[id], buf_send_unch, BUFSIZE, 0);
 			if (retval == SOCKET_ERROR) {
-				cout << "실패 - recvn - CS_PACKET_PLAYERINFO_INCHANGINGSCENE" << endl;
+				cout << "failed : send - 고정 - SC_PACKET_PLAYERINFO_INITIALLY" << endl;
 				break;
 			}
-			else
-				memcpy(&tempplayerinfo, buf, sizeof(tempplayerinfo));
-			// 3. g_vecplayer[받은 playerinfo의 id]에 정보를 갱신한다.
-			m.lock();
-			g_vecplayer[id] = tempplayerinfo;
-			m.unlock();
-			// 4. 다른 클라이언트에게 g_vecplayer[0], g_vecplayer[1] 정보를 보낸다.
-			if (g_vecplayer.size() == 2) { // 2인 접속 시에만.
-				ZeroMemory(&packetinfo, sizeof(packetinfo));
-				packetinfo.id = id;
-				packetinfo.size = sizeof(PLAYERINFO);
-				packetinfo.type = SC_PACKET_OTHER_PLAYERINFO;
-				memcpy(buf, &packetinfo, sizeof(packetinfo));
-				m.lock();
-				if (0 == id) 	// 0 정보는 1에게 보내야 한다.
-					retval = send(g_vecsocket[id + 1], buf, BUFSIZE, 0);
-				else // 1 정보는 0에게 보낸다.
-					retval = send(g_vecsocket[id - 1], buf, BUFSIZE, 0);
-				if (retval == SOCKET_ERROR) {
-					cout << "failed : send - 고정 - SC_PACKET_OTHER_PLAYERINFO" << endl;
-					break;
-				}
-				ZeroMemory(buf, sizeof(buf));
-				memcpy(buf, &(g_vecplayer[id]), sizeof(playerinfo));
-				if (0 == id) {
-					retval = send(g_vecsocket[id + 1], buf, BUFSIZE, 0);
-				}
-				else if (1 == id) {
-					retval = send(g_vecsocket[id - 1], buf, BUFSIZE, 0);
-				}
-				m.unlock();
-				if (retval == SOCKET_ERROR) {
-					cout << "failed : send - 가변 - SC_PACKET_OTHER_PLAYERINFO" << endl;
-					break;
-				}
+			float x = 100.f;
 
+			char buf_send_ch[BUFSIZE];
+			m.lock();
+			g_vecplayer[id].pt.x = x;
+			m.unlock();
+			memcpy(buf_send_ch, &x, sizeof(x));
+			retval = send(g_vecsocket[id], buf_send_ch, BUFSIZE, 0);
+			if (retval == SOCKET_ERROR) {
+				cout << "failed : send - 가변 - SC_PACKET_PLAYERINFO_INITIALLY" << endl;
+				break;
 			}
 		}
 		break;

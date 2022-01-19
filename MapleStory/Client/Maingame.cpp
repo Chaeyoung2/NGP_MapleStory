@@ -167,9 +167,6 @@ void RecvPacket()
 				MessageBoxW(g_hWnd, L"recvn() - SC_PACKET_YOUR_PLAYERINFO", MB_OK, MB_OK);
 			else {
 				memcpy(&(g_vecplayer[id]), buf, sizeof(g_vecplayer[id]));
-#ifdef DEBUG
-				cout << "YOUR_PLAYERINFO - 가변 길이를 받아왔어요!" << endl;
-#endif
 			}
 			// 순서 문제 때문에 추가.
 			/// Field 씬일 때, CField가 가지고 있는 CPlayer에 직접 접근하여 
@@ -234,6 +231,39 @@ void RecvPacket()
 			break;
 			}
 
+		}
+		break;
+		case SC_PACKET_PLAYERINFO_INCHANGINGSCENE:
+		{
+			int id = packetinfo.id; 
+			ZeroMemory(buf, sizeof(buf));
+			int retval = recvn(g_sock, buf, BUFSIZE, 0);
+			if (retval == SOCKET_ERROR)
+				MessageBoxW(g_hWnd, L"recvn() - SC_PACKET_YOUR_PLAYERINFO", MB_OK, MB_OK);
+			else {
+				memcpy(&(g_vecplayer[id].pt.x), buf, sizeof(g_vecplayer[id].pt.x));
+			}
+			// 순서 문제 때문에 추가.
+			/// Field 씬일 때, CField가 가지고 있는 CPlayer에 직접 접근하여 
+			/// 서버로부터 받아온 좌표를 직접 넘겨준다.
+			if (SCENE_FIELD == g_eScene) {
+				CScene* pScene = CSceneMgr::GetInstance()->GetScene();
+				if (pScene != nullptr) {
+					CPlayer* pPlayer = dynamic_cast<CField*>(pScene)->GetPlayer();
+					if (pPlayer != nullptr) {
+						pPlayer->SetInfoPt(g_vecplayer[id].pt);
+					}
+				}
+			}
+			if (SCENE_STAGE1 == g_eScene) {
+				CScene* pScene = CSceneMgr::GetInstance()->GetScene();
+				if (pScene != nullptr) {
+					CPlayer* pPlayer = dynamic_cast<CStage1*>(pScene)->GetPlayer();
+					if (pPlayer != nullptr) {
+						pPlayer->SetInfoPt(g_vecplayer[id].pt);
+					}
+				}
+			}
 		}
 		break;
 		}
