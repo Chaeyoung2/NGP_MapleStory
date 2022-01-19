@@ -1,33 +1,22 @@
-#include <winsock2.h>
-#include <iostream>
-#include <vector>
-#include <time.h>
-#include <mutex>
 #include "Server.h"
-#include "../../MapleStory/Headers/Include.h"
-using namespace std;
-
-#pragma comment(lib, "Ws2_32.lib")
-
-#define DEBUG
 
 vector<SOCKET> g_vecsocket;
 vector<PLAYERINFO> g_vecplayer;
 vector<SKILLINFO> g_vecskill;
 bool g_arrayconnected[MAX_USER]; // connected 배열 (id 부여 위함)
 
-// 몬스터
 MONSTERPACKET g_monster_packet;
 
-// 스레드 동기화
 mutex m;
 
-// 클라이언트 체크 
 bool isEnd = false;
 
-DWORD WINAPI RecvThread(LPVOID arg)
+DWORD Monster_Old_Movetime;
+DWORD Monster_Cur_Movetime;
+DWORD test_old_time = GetTickCount();
+
+void RecvThread(SOCKET client_sock)
 {
-	SOCKET client_sock = (SOCKET)arg;
 	SOCKADDR_IN clientaddr;
 	int addrlen = sizeof(clientaddr);
 	getpeername(client_sock, (SOCKADDR *)&clientaddr, &addrlen);
@@ -63,16 +52,7 @@ DWORD WINAPI RecvThread(LPVOID arg)
 
 			// 2. playerinfo의 나머지 멤버 변수들은 서버에서 채워준다. (id, size, hp, mp, ..)
 			// id 부여
-			int id = -1;
-			m.lock();
-			for (int i = 0; i < MAX_USER; ++i) {
-				if (false == g_arrayconnected[i]) {
-					g_arrayconnected[i] = true;
-					id = i;
-					break;
-				}
-			}
-			m.unlock();
+			int id = GetEmptyID();
 			if (-1 == id) {
 				cout << "user가 다 찼습니다." << std::endl;
 				closesocket(client_sock);
@@ -383,7 +363,6 @@ DWORD WINAPI RecvThread(LPVOID arg)
 			isEnd = true;
 			closesocket(client_sock);
 			cout << "[클라이언트 정상 종료] IP 주소 (" << inet_ntoa(clientaddr.sin_addr) << "), 포트 번호 (" << ntohs(clientaddr.sin_port) << ")" << endl;
-			return 0;
 		}
 		break;
 		}
@@ -392,10 +371,9 @@ DWORD WINAPI RecvThread(LPVOID arg)
 	closesocket(client_sock);
 	cout << "[클라이언트 강제 종료] IP 주소 (" << inet_ntoa(clientaddr.sin_addr) << "), 포트 번호 (" << ntohs(clientaddr.sin_port) << ")" << endl;
 
-	return 0;
 }
 
-DWORD WINAPI AIThread(LPVOID arg)
+void AIThread()
 {
 	Monster_Old_Movetime = GetTickCount();
 	Monster_Cur_Movetime;
@@ -408,11 +386,9 @@ DWORD WINAPI AIThread(LPVOID arg)
 			Monster_Old_Movetime = GetTickCount();
 		}
 	}
-	return 0;
 }
-DWORD test_old_time = GetTickCount();
 
-DWORD WINAPI MonsterThread(LPVOID)
+void MonsterThread()
 {
 	PACKETINFO packetinfo;
 	int retval{ 0 };
@@ -475,7 +451,94 @@ DWORD WINAPI MonsterThread(LPVOID)
 	if (!isEnd)
 		cout << "[클라이언트 강제 종료: 몬스터 스레드 강제 종료]" << endl;
 
+}
+
+
+int main()
+{
+	// 윈속 초기화
+	InitializeNetwork();
+
+	g_vecplayer.reserve(MAX_USER);
+
+	// 몬스터 좌표 초기화
+	InitializeMonsterInfo();
+
+	int retval;
+
+	// socket()
+	SOCKET listen_sock = socket(AF_INET, SOCK_STREAM, 0);
+	if (listen_sock == INVALID_SOCKET)
+		err_quit("socket()");
+
+	// 주소 구조체 생성
+	SOCKADDR_IN serveraddr;
+	ZeroMemory(&serveraddr, sizeof(serveraddr));
+	serveraddr.sin_family = AF_INET;
+	serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	serveraddr.sin_port = htons(SERVERPORT);
+
+	// bind()
+	retval = bind(listen_sock, (SOCKADDR*)&serveraddr, sizeof(serveraddr));
+	if (retval == SOCKET_ERROR)
+		err_quit("bind()");
+
+	// listen()
+	retval = listen(listen_sock, SOMAXCONN);
+	if (retval == SOCKET_ERROR)
+		err_quit("listen()");
+
+	// 데이터 통신에 사용할 변수
+	SOCKET client_sock;
+	SOCKADDR_IN clientaddr;
+	int addrlen;
+
+	thread aiThread{ AIThread };
+	thread monThread{ MonsterThread };
+	thread clientThreads[MAX_USER] = {};
+
+	while (true) {
+		// accept()
+		addrlen = sizeof(clientaddr);
+		client_sock = accept(listen_sock, (SOCKADDR*)&clientaddr, &addrlen);
+		if (client_sock == INVALID_SOCKET) {
+			err_display("accept()");
+			break;
+		}
+
+		// 접속 가능한지 확인 후 클라이언트 스레드 생성
+		int id = GetEmptyID();
+		if(id != -1)
+			clientThreads[id] = thread{ RecvThread, client_sock };
+
+		// 접속한 클라이언트 socket을 배열에 담는다. (1201)
+		g_vecsocket.push_back(client_sock);
+		cout << "연결:" << g_vecsocket.size() << endl;
+		cout << "[클라이언트 접속] IP 주소 (" << inet_ntoa(clientaddr.sin_addr) <<
+			"), 포트 번호 (" << ntohs(clientaddr.sin_port) << ")" << endl;
+		
+	}
+	// 스레드 종료 대기
+	for (int i = 0; i < MAX_USER; ++i) {
+		clientThreads[i].join();
+	}
+	aiThread.join();
+	monThread.join();
+
+	// closesocket()
+	closesocket(listen_sock);
+
+	EndNetwork();
+
 	return 0;
+}
+
+void InitializeNetwork()
+{
+	// 윈속 초기화.
+	WSADATA wsa;
+	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+		err_quit("WSAStartup()");
 }
 
 void InitializeMonsterInfo()
@@ -548,106 +611,16 @@ void GreenMushRoom_MoveInPattern()
 	}
 }
 
-int main()
+int GetEmptyID()
 {
-	// 윈속 초기화
-	InitializeNetwork();
-
-	g_vecplayer.reserve(MAX_USER);
-
-	// 몬스터 좌표 초기화
-	InitializeMonsterInfo();
-
-	int retval;
-
-	// socket()
-	SOCKET listen_sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (listen_sock == INVALID_SOCKET)
-		err_quit("socket()");
-
-	// 주소 구조체 생성
-	SOCKADDR_IN serveraddr;
-	ZeroMemory(&serveraddr, sizeof(serveraddr));
-	serveraddr.sin_family = AF_INET;
-	serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	serveraddr.sin_port = htons(SERVERPORT);
-
-	// bind()
-	retval = bind(listen_sock, (SOCKADDR *)&serveraddr, sizeof(serveraddr));
-	if (retval == SOCKET_ERROR)
-		err_quit("bind()");
-
-	// listen()
-	retval = listen(listen_sock, SOMAXCONN);
-	if (retval == SOCKET_ERROR)
-		err_quit("listen()");
-
-	// 데이터 통신에 사용할 변수
-	HANDLE hThread[3];
-	SOCKET client_sock;
-	SOCKADDR_IN clientaddr;
-	int addrlen;
-
-	int test_num{};
-	while (true) {
-		// accept()
-		addrlen = sizeof(clientaddr);
-		client_sock = accept(listen_sock, (SOCKADDR *)&clientaddr, &addrlen);
-		if (client_sock == INVALID_SOCKET) {
-			err_display("accept()");
-			break;
-		}
-
-		// 접속한 클라이언트 socket을 배열에 담는다. (1201)
-		g_vecsocket.push_back(client_sock);
-		cout << "연결:" << g_vecsocket.size() << endl;
-		cout << "[클라이언트 접속] IP 주소 (" << inet_ntoa(clientaddr.sin_addr) <<
-			"), 포트 번호 (" << ntohs(clientaddr.sin_port) << ")" << endl;
-
-		// 클라이언트 스레드 생성
-		hThread[0] = CreateThread(NULL, 0, RecvThread, (LPVOID)client_sock, 0, NULL);
-		//if (hThread[0] == NULL)
-		//	closesocket(client_sock);
-		//else
-		//	CloseHandle(hThread[0]);
-
-
-		if (g_vecsocket.size() < 2)
-		{
-			//계산 스레드 생성
-			hThread[1] = CreateThread(NULL, 0, AIThread, NULL, 0, NULL);
-			//if (hThread[1] == NULL)
-			//	closesocket(client_sock);
-			//else
-			//	CloseHandle(hThread[1]);
-
-			// //몬스터 스레드 생성
-			hThread[2] = CreateThread(NULL, 0, MonsterThread, NULL, 0, NULL);
-			//if (hThread[2] == NULL)
-			//	closesocket(client_sock);
-			//else
-			//	CloseHandle(hThread[2]);
-		}
-
+	int id = 0;
+	for (;  id < g_vecplayer.size(); ++id) {
+		if (g_vecplayer[id].connected == true) continue;
+		if (id == MAX_USER - 1) return -1;
 	}
-	// 스레드 종료 대기
-	WaitForMultipleObjects(3, hThread, TRUE, WAIT_FAILED);
-
-	// closesocket()
-	closesocket(listen_sock);
-
-	EndNetwork();
-
-	return 0;
+	return id;
 }
 
-void InitializeNetwork()
-{
-	// 윈속 초기화.
-	WSADATA wsa;
-	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
-		err_quit("WSAStartup()");
-}
 
 void EndNetwork()
 {
