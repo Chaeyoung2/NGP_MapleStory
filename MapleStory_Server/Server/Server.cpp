@@ -25,12 +25,12 @@ void RecvThread(SOCKET client_sock)
 	PACKETINFO packetinfo;
 	PLAYERINFO playerinfo;
 
-	while (true) {
+	while (!isEnd) {
 		char buf[BUFSIZE];
 		ZeroMemory(&packetinfo, sizeof(packetinfo));
 		retval = recvn(client_sock, buf, BUFSIZE, 0);
 		if (retval == SOCKET_ERROR) {
-			err_display("packetinfo recv()");
+			//err_display("packetinfo recv()");
 			break;
 		}
 		else
@@ -42,7 +42,7 @@ void RecvThread(SOCKET client_sock)
 			ZeroMemory(buf, sizeof(buf));	 
 			retval = recvn(client_sock, buf, packetinfo.size, 0);
 			if (retval == SOCKET_ERROR) {
-				err_display("intial playerinfo recv()");
+				//err_display("intial playerinfo recv()");
 				break;
 			}
 			else {
@@ -107,8 +107,7 @@ void RecvThread(SOCKET client_sock)
 				ZeroMemory(buf, sizeof(buf));
 				memcpy(buf, &packetinfo, sizeof(packetinfo));
 
-				int recvid;  // 받을 클라이언트의 id?
-				if (playerinfo.id == 0) recvid = 1; else recvid = 0;
+				int recvid = !playerinfo.id;  // 받을 클라이언트의 id?
 				retval = send(g_vecsocket[recvid], buf, BUFSIZE, 0);
 				if (retval == SOCKET_ERROR) {
 					err_display("send() - SC_PACKET_NEW_OTHER_PLAYERINFO");
@@ -229,24 +228,24 @@ void RecvThread(SOCKET client_sock)
 				break;
 			}
 
-			// 다른 플레이어 정보도 전송
+			// 다른 플레이어에게 내 정보 전송
 			if (g_vecplayer.size() >= 2) {
 				PACKETINFO temppacketinfo = {};
-				temppacketinfo.id = !packetinfo.id;// 1번째 클라이언트는 0번째 클라이언트의 정보를 받아야 한다.
-				temppacketinfo.size = sizeof(g_vecplayer[temppacketinfo.id]);
+				temppacketinfo.id = packetinfo.id;// 1번째 클라이언트는 0번째 클라이언트의 정보를 받아야 한다.
+				temppacketinfo.size = sizeof(g_vecplayer[packetinfo.id]);
 				temppacketinfo.type = SC_PACKET_OTHER_PLAYERINFO;
 				ZeroMemory(buf, sizeof(buf));
 				memcpy(buf, &temppacketinfo, sizeof(temppacketinfo));
-				retval = send(g_vecsocket[temppacketinfo.id], buf, BUFSIZE, 0);
+				retval = send(g_vecsocket[!(packetinfo.id)], buf, BUFSIZE, 0);
 				if (retval == SOCKET_ERROR) {
-					err_display("send() - SC_PACKET_NEW_OTHER_PLAYERINFO");
+					err_display("send() - SC_PACKET_OTHER_PLAYERINFO");
 					break;
 				}
 				ZeroMemory(buf, sizeof(buf));
-				memcpy(buf, &(g_vecplayer[temppacketinfo.id]), sizeof(g_vecplayer[temppacketinfo.id]));
-				retval = send(g_vecsocket[temppacketinfo.id], buf, BUFSIZE, 0);
+				memcpy(buf, &(g_vecplayer[packetinfo.id]), sizeof(g_vecplayer[packetinfo.id]));
+				retval = send(g_vecsocket[!(packetinfo.id)], buf, BUFSIZE, 0);
 				if (retval == SOCKET_ERROR) {
-					err_display("send() - SC_PACKET_NEW_OTHER_PLAYERINFO");
+					err_display("send() - SC_PACKET_OTHER_PLAYERINFO");
 					break;
 				}
 			}
@@ -357,9 +356,13 @@ void RecvThread(SOCKET client_sock)
 
 		case CS_PACKET_CLIENT_END: // 클라이언트 종료 처리
 		{
-			isEnd = true;
+			int id = packetinfo.id;
+			g_vecplayer[id] = {};
+			g_vecplayer[id].connected = false;
 			closesocket(client_sock);
 			cout << "[클라이언트 정상 종료] IP 주소 (" << inet_ntoa(clientaddr.sin_addr) << "), 포트 번호 (" << ntohs(clientaddr.sin_port) << ")" << endl;
+
+			isEnd = true;
 		}
 		break;
 		case CS_PACKET_PLAYER_READY:
@@ -390,7 +393,7 @@ void AIThread()
 {
 	Monster_Old_Movetime = GetTickCount();
 	Monster_Cur_Movetime;
-	while (1)
+	while (!isEnd)
 	{
 		Monster_Cur_Movetime = GetTickCount();
 		if (Monster_Cur_Movetime - Monster_Old_Movetime >= 30)
@@ -408,7 +411,7 @@ void MonsterThread()
 	char buf[BUFSIZE];
 	DWORD test_cur_time;
 
-	while (1)
+	while (!isEnd)
 	{
 		if (isEnd)	// 클라이언트 소켓이 종료되면 몬스터 소켓도 종료
 		{
@@ -510,7 +513,7 @@ int main()
 	thread monThread{ MonsterThread };
 	thread clientThreads[MAX_USER] = {};
 
-	while (true) {
+	while (!isEnd) {
 		// accept()
 		addrlen = sizeof(clientaddr);
 		client_sock = accept(listen_sock, (SOCKADDR*)&clientaddr, &addrlen);

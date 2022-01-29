@@ -97,7 +97,10 @@ void CPlayer::Initialize(void)
 
 int CPlayer::Update(void)
 {
-	if (true == m_bIsDead)	return 1;
+	if (true == m_bIsDead)	
+		return 1;
+
+	
  
 	if (m_IsMaster) {
 		KeyCheck();
@@ -116,7 +119,7 @@ int CPlayer::Update(void)
 	int id = WhatIsID();
 	UpdateImageInJob(g_vecplayer[id].dir); 
 
-	if(m_IsMaster)	
+	if(m_IsMaster)
 		SendMovePacket(); 	
 
 	CObj::UpdateRect();
@@ -227,13 +230,6 @@ void CPlayer::Scroll()
 	//}
 
 	int id = WhatIsID();
-
-#ifdef DEBUG_SCROLL
-	cout << "g_fScrollX : " << g_fScrollX << endl;
-	cout << "g_vecplayer[id].pt.x : " << g_vecplayer[id].pt.x << endl;
-	cout << "m_tInfo.pt.x : " << m_tInfo.pt.x << endl;
-	cout << "m_fOffSet : " << m_fOffSet << endl;
-#endif 
 
 	bool next = true;
 
@@ -725,6 +721,8 @@ void CPlayer::SendSceneChangePacket()
 		MessageBox(g_hWnd, L"send()", L"send - 고정 - CS_PACKET_PLAYERINFO_INCHANGINGSCENE", MB_OK);
 		g_bIsProgramEnd = true;	// 프로그램 종료
 	}
+	else
+		cout << "CS_PACKET_PLAYERINFO_INCHANGINGSCENE send()" << endl;
 }
 
 void CPlayer::SendSkillCreatePacket(SKILL_TYPE eType)
@@ -920,9 +918,6 @@ void CPlayer::InChangingScene()
 	{
 		int id = WhatIsID();
 		int otherid = WhatIsOtherID();
-		g_vecplayer[id].pt.x = 100.f;
-		g_vecplayer[otherid].pt.x = 100.f;
-		m_tInfo.pt.x = 100.f;
 		// 오프셋 값 원위치
 		m_fOffSet = WINCX / 2.f;
 
@@ -931,10 +926,13 @@ void CPlayer::InChangingScene()
 			g_fScrollX = 0.f;
 			g_fScrollY = (WINCY - HENESISCY);
 			m_fOffSetY = WINCY / 2.f + 100.f;
+			g_vecplayer[id].pt.x = 100.f;
+			g_vecplayer[otherid].pt.x = 100.f;
+			m_tInfo.pt.x = 100.f;
 		}
 
-		g_bIsSceneChange = false;
 		SendSceneChangePacket();
+		g_bIsSceneChange = false;
 	}
 	return;
 

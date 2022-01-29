@@ -59,8 +59,7 @@ int CResult::Update(void)
 		GetCursorPos(&pt);
 		ScreenToClient(g_hWnd, &pt);
 
-		if (PtInRect(&m_tExitButton, pt) &&
-			CKeyMgr::GetInstance()->OnceKeyDown(VK_LBUTTON))
+		if (PtInRect(&m_tExitButton, pt) && CKeyMgr::GetInstance()->OnceKeyDown(VK_LBUTTON))
 			g_bIsProgramEnd = true;	// 프로그램 종료
 	}
 

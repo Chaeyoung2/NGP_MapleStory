@@ -92,14 +92,18 @@ enum PACKET_TYPE { // CS - Client to Server. SC - Server to Client.
 	// CS_PACKET_SKILL_MOVE,
 
 	CS_PACKET_GRRENMUSH,
-	//----------------------------------------
-	SC_PACKET_YOUR_PLAYERINFO, // 서버 : 너 상태 바뀌었지? or 새로 접속했지? 니 playerinfo는 이거야. // 오 알았어! 내 g_vecplayer[내 아이디]에 저장할게.
-	SC_PACKET_OTHER_PLAYERINFO, 	// 서버 : 다른 클라이언트가 상태가 바뀌었어. 이 아이의 info는 이래. // 클라이언트 : 알았어. 나의 g_vecplayer[상태 바뀐 클라의 id]에 갱신할게.
-	SC_PACKET_NEW_OTHER_PLAYERINFO, // 서버:  새로운 다른 클라이언트가 들어왔어. 이 아이의 info는 이래. // 클라이언트 : 알았어. CreateObj를 해서 걔의 정보를 넣고, 나의 g_vecplayer[상태 바뀐 클라의 id]에 갱신할게.
-	SC_PACKET_SKILL_CREATE, // 서버 : 어떤 클라이언트가 이런 스킬을 생성했어. 정보를 보낼게. // 클라이언트 : 그러면 그 스킬을 새로 만들게.
-	SC_PACKET_SKILL_MOVE,
-	SC_PACKET_PLAYERINFO_INCHANGINGSCENE, // 서버: 씬 바뀌었다며? 이걸로 플레이어 정보 초기화해라.
-
 	CS_PACKET_CLIENT_END,	// 클라이언트 종료 서버한테 알리기
-	SC_PACKET_GRRENMUSH
+	CS_PACKET_PLAYER_READY,
+	//----------------------------------------
+	SC_PACKET_NEW_OTHER_PLAYERINFO, // 서버:  새로운 다른 클라이언트가 들어왔어. 이 아이의 info는 이래. // 클라이언트 : 알았어. CreateObj를 해서 걔의 정보를 넣고, 나의 g_vecplayer[상태 바뀐 클라의 id]에 갱신할게.
+	SC_PACKET_OTHER_PLAYERINFO, 	// 서버 : 다른 클라이언트가 상태가 바뀌었어. 이 아이의 info는 이래. // 클라이언트 : 알았어. 나의 g_vecplayer[상태 바뀐 클라의 id]에 갱신할게.
+	SC_PACKET_YOUR_PLAYERINFO, // 서버 : 너 상태 바뀌었지? or 새로 접속했지? 니 playerinfo는 이거야. // 오 알았어! 내 g_vecplayer[내 아이디]에 저장할게.
+	SC_PACKET_GRRENMUSH,
+	SC_PACKET_SKILL_CREATE, // 서버 : 어떤 클라이언트가 이런 스킬을 생성했어. 정보를 보낼게. // 클라이언트 : 그러면 그 스킬을 새로 만들게.
+	SC_PACKET_PLAYERINFO_INCHANGINGSCENE, // 서버: 씬 바뀌었다며		? 이걸로 플레이어 정보 초기화해라.
+	SC_PACKET_SKILL_MOVE,
+	SC_PACKET_PLAYER_READY,
+
+
 };
+
