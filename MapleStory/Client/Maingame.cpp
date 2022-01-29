@@ -129,9 +129,6 @@ void RecvPacket()
 
 				if (g_vecplayer[id].nickname == "")
 					break;
-#ifdef DEBUG
-				cout << "OTHER PLAYERINFO - 가변 길이를 받아왔어요!" << endl;
-#endif
 				// 순서 문제 때문에 추가.
 				/// Field 씬일 때, CField가 가지고 있는 CPlayer에 직접 접근하여 
 				/// 서버로부터 받아온 좌표를 직접 넘겨준다.
@@ -252,6 +249,8 @@ void RecvPacket()
 					CPlayer* pPlayer = dynamic_cast<CField*>(pScene)->GetPlayer();
 					if (pPlayer != nullptr) {
 						pPlayer->SetInfoPt(g_vecplayer[id].pt);
+						//g_bIsSend = true;
+						//pPlayer->SendMovePacket();
 					}
 				}
 			}
@@ -261,9 +260,17 @@ void RecvPacket()
 					CPlayer* pPlayer = dynamic_cast<CStage1*>(pScene)->GetPlayer();
 					if (pPlayer != nullptr) {
 						pPlayer->SetInfoPt(g_vecplayer[id].pt);
+						//g_bIsSend = true;
+						//pPlayer->SendMovePacket();
 					}
 				}
 			}
+		}
+		break;
+		case SC_PACKET_PLAYER_READY:
+		{
+			int id = packetinfo.id;
+			g_vecplayer[id].ready = true;
 		}
 		break;
 		}

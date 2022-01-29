@@ -15,6 +15,8 @@ public:
 	virtual void	Release(void);
 	virtual void	FrameMove();
 
+public:
+	void SendReadyPacket();
 private:
 	bool m_bIsNextButtonActivated;
 };

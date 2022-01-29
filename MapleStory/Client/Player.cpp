@@ -920,6 +920,9 @@ void CPlayer::InChangingScene()
 	{
 		int id = WhatIsID();
 		int otherid = WhatIsOtherID();
+		g_vecplayer[id].pt.x = 100.f;
+		g_vecplayer[otherid].pt.x = 100.f;
+		m_tInfo.pt.x = 100.f;
 		// 오프셋 값 원위치
 		m_fOffSet = WINCX / 2.f;
 

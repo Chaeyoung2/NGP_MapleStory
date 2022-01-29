@@ -98,7 +98,9 @@ public:
 		m_playerinfo = playerinfo; 
 		m_IsMaster = false;
 	}
-	void SetInfoPt(MYPOINT pt) { m_tInfo.pt = pt; }
+	void SetInfoPt(MYPOINT pt) { 
+		m_tInfo.pt = pt; 
+	}
 
 	// 무적 상태
 	bool		 GetIsInvincible() { return m_bIsInvincible; }

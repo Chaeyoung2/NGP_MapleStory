@@ -77,18 +77,12 @@ int CField::Update()
 
 		if (i + 1 == g_vecplayer.size())	// 모든 플레이어가 대기 상태라면
 		{
+			g_bIsSceneChange = true;
 			g_eScene = SCENE_STAGE1;
 			CSceneMgr::GetInstance()->SetScene(SCENE_STAGE1);
-			g_bIsSceneChange = true;
 		}
 	}
 
-	// 예솔이 위해서 ^^ . 나중에 지울것..
-	if (KEYMGR->OnceKeyUp(VK_F1)) {
-		CSceneMgr::GetInstance()->SetScene(SCENE_STAGE1);
-		g_eScene = SCENE_STAGE1;
-		g_bIsSceneChange = true;
-	}
 	return 0;
 }
 

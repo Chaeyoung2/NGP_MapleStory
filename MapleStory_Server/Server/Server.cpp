@@ -209,7 +209,7 @@ void RecvThread(SOCKET client_sock)
 			// 고정 길이 패킷만 받아온다.
 
 			PACKETINFO packetinfo_send = { SC_PACKET_PLAYERINFO_INCHANGINGSCENE, sizeof(MYPOINT), id };
-			char buf_send_unch[BUFSIZE];
+			char buf_send_unch[BUFSIZE] = "";
 			memcpy(buf_send_unch, &packetinfo_send, sizeof(packetinfo_send));
 			retval = send(g_vecsocket[id], buf_send_unch, BUFSIZE, 0);
 			if (retval == SOCKET_ERROR) {
@@ -218,7 +218,7 @@ void RecvThread(SOCKET client_sock)
 			}
 			MYPOINT pt = { 100.f, 476.f };
 
-			char buf_send_ch[BUFSIZE];
+			char buf_send_ch[BUFSIZE] = "";
 			m.lock();
 			g_vecplayer[id].pt = pt;
 			m.unlock();
@@ -227,6 +227,28 @@ void RecvThread(SOCKET client_sock)
 			if (retval == SOCKET_ERROR) {
 				cout << "failed : send - 가변 - SC_PACKET_PLAYERINFO_INITIALLY" << endl;
 				break;
+			}
+
+			// 다른 플레이어 정보도 전송
+			if (g_vecplayer.size() >= 2) {
+				PACKETINFO temppacketinfo = {};
+				temppacketinfo.id = !packetinfo.id;// 1번째 클라이언트는 0번째 클라이언트의 정보를 받아야 한다.
+				temppacketinfo.size = sizeof(g_vecplayer[temppacketinfo.id]);
+				temppacketinfo.type = SC_PACKET_OTHER_PLAYERINFO;
+				ZeroMemory(buf, sizeof(buf));
+				memcpy(buf, &temppacketinfo, sizeof(temppacketinfo));
+				retval = send(g_vecsocket[temppacketinfo.id], buf, BUFSIZE, 0);
+				if (retval == SOCKET_ERROR) {
+					err_display("send() - SC_PACKET_NEW_OTHER_PLAYERINFO");
+					break;
+				}
+				ZeroMemory(buf, sizeof(buf));
+				memcpy(buf, &(g_vecplayer[temppacketinfo.id]), sizeof(g_vecplayer[temppacketinfo.id]));
+				retval = send(g_vecsocket[temppacketinfo.id], buf, BUFSIZE, 0);
+				if (retval == SOCKET_ERROR) {
+					err_display("send() - SC_PACKET_NEW_OTHER_PLAYERINFO");
+					break;
+				}
 			}
 		}
 		break;
@@ -338,6 +360,22 @@ void RecvThread(SOCKET client_sock)
 			isEnd = true;
 			closesocket(client_sock);
 			cout << "[클라이언트 정상 종료] IP 주소 (" << inet_ntoa(clientaddr.sin_addr) << "), 포트 번호 (" << ntohs(clientaddr.sin_port) << ")" << endl;
+		}
+		break;
+		case CS_PACKET_PLAYER_READY:
+		{
+			// 고정 길이만 보냄
+			if (g_vecplayer.size() >= 2) {
+				PACKETINFO packetinfo_send = { SC_PACKET_PLAYER_READY, sizeof(bool), packetinfo.id };
+				char buf_send[BUFSIZE] = "";
+				memcpy(buf_send, &packetinfo_send, sizeof(packetinfo_send));
+				int sendtoid = !packetinfo.id;
+				int retval = send(g_vecsocket[sendtoid], buf_send, BUFSIZE, 0);
+				if (retval == SOCKET_ERROR) {
+					err_display("recvn() - CS_PACKET_SKILL_CREATE");
+					return;
+				}
+			}
 		}
 		break;
 		}

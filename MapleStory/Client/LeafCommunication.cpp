@@ -69,6 +69,7 @@ int CLeafCommunication::Update(void)
 
 				// 파티 대기 상태로 바꾸기
 				g_vecplayer[g_myid].ready = true;
+				SendReadyPacket();
 			}
 			else
 				m_iRenderNumber++;
@@ -128,5 +129,17 @@ void CLeafCommunication::FrameMove()
 	case 4:
 		m_bIsDead = 1;
 		break;
+	}
+}
+
+void CLeafCommunication::SendReadyPacket()
+{
+	PACKETINFO packetinfo = { CS_PACKET_PLAYER_READY, sizeof(bool), g_myid };
+	char buf[BUFSIZE] = "";
+	memcpy(buf, &packetinfo, sizeof(packetinfo));
+	int retval = send(g_sock, buf, BUFSIZE, 0);
+	if (retval == SOCKET_ERROR) {
+		MessageBox(g_hWnd, L"send()", L"send() - 가변 - CS_PACKET_PLAYER_READY", NULL);
+		return;
 	}
 }
