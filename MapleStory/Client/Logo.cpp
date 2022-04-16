@@ -190,10 +190,6 @@ void CLogo::Release()
 	CObjMgr::GetInstance()->ReleaseAll();
 }
 
-void CLogo::setNextScene()
-{
-}
-
 bool CLogo::MouseInLogin(void)
 {
 	POINT pt;

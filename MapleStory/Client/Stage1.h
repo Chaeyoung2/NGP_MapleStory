@@ -13,8 +13,6 @@ public:
 	virtual int Update();
 	virtual void Render(HDC hDc);
 	virtual void Release();
-
-	virtual void setNextScene();
 public:
 	void SetOtherPlayer(CPlayer* pOtherPlayer) { m_pOtherPlayer = pOtherPlayer; }
 	void SetPlayer(CPlayer* pPlayer) { m_pPlayer = pPlayer; }

@@ -134,16 +134,12 @@ void CStage1::Render(HDC hDc)
 	BitBlt(hDc, static_cast<int>(g_fScrollX), 30 + static_cast<int>(g_fScrollY), HENESISCX, HENESISCY,
 		hMemDC, 0, 0, SRCCOPY);
 
-	/*if (GetAsyncKeyState('1'))
-		*/CLineMgr::GetInstance()->Render(hDc);
+	if (GetAsyncKeyState('1'))
+		CLineMgr::GetInstance()->Render(hDc);
 	CObjMgr::GetInstance()->RenderObj(hDc);
 }
 
 void CStage1::Release()
 {
 	CObjMgr::GetInstance()->ReleaseAll();
-}
-
-void CStage1::setNextScene()
-{
 }

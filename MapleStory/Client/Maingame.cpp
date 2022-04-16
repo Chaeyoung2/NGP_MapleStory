@@ -58,9 +58,13 @@ int recvn(SOCKET s, char* buf, int len, int flags)
 void RecvPacket()
 {
 	while (!g_bIsProgramEnd) {
+		m.lock();
 		if (-1 == g_myid) {
+			m.unlock();
 			continue;
 		}
+		else
+			m.unlock();
 
 		int retval = recvn(g_sock, buf, BUFSIZE, 0);
 		memcpy(&packetinfo, buf, sizeof(packetinfo));
@@ -72,6 +76,7 @@ void RecvPacket()
 		{
 		case SC_PACKET_NEW_OTHER_PLAYERINFO: 
 		{
+			cout << "SC_PACKET_NEW_OTHER_PLAYERINFO" << endl;
 
 			int newplayerid{ 0 };
 			PLAYERINFO newplayerinfo = {};
@@ -104,12 +109,17 @@ void RecvPacket()
 				}
 			}
 
+			// 5. 확인
+				//cout << "----------현재 접속 정보-----------" << endl;
+				//cout << "[0번째 클라이언트] 닉네임 : " << g_vecplayer[0].nickname << ", 직업 : " << g_vecplayer[0].job << endl;
+				//cout << "[1번째 클라이언트] 닉네임 : " << g_vecplayer[1].nickname << ", 직업 : " << g_vecplayer[1].job << endl;
 		}
 		break;
 		case SC_PACKET_OTHER_PLAYERINFO:
 		{
 			if (g_bIsSceneChange) break;
-			int id = packetinfo.id;
+			// 상태가 바뀐 다른 플레이어 info를 받아온다.
+			int id = packetinfo.id; // 바꿀 클라이언트의 id를 받아온다.
 
 			ZeroMemory(buf, sizeof(buf));
 			int retval = recvn(g_sock, buf, BUFSIZE, 0);
@@ -119,6 +129,7 @@ void RecvPacket()
 				m.lock();
 				memcpy(&(g_vecplayer[id]), buf, sizeof(g_vecplayer[id]));
 				m.unlock();
+				cout << "SC_PACKET_OTHER_PLAYERINFO recv" << endl;
 
 				if (g_vecplayer[id].nickname == "")
 					break;
@@ -131,6 +142,7 @@ void RecvPacket()
 						CPlayer* pOtherPlayer = dynamic_cast<CField*>(pScene)->GetOtherPlayer();
 						if (pOtherPlayer != nullptr) {
 							pOtherPlayer->SetPos(g_vecplayer[id].pt.x, g_vecplayer[id].pt.y);
+							cout << id << "의 SetInfoPt, x: " << g_vecplayer[id].pt.x << endl;
 						}
 					}
 				}
@@ -140,6 +152,7 @@ void RecvPacket()
 						CPlayer* pOtherPlayer = dynamic_cast<CStage1*>(pScene)->GetOtherPlayer();
 						if (pOtherPlayer != nullptr) {
 							pOtherPlayer->SetPos(g_vecplayer[id].pt.x, g_vecplayer[id].pt.y);
+							cout << id << "의 SetInfoPt, x: " << g_vecplayer[id].pt.x << endl;
 						}
 					}
 				}
@@ -160,6 +173,7 @@ void RecvPacket()
 				m.lock();
 				memcpy(&(g_vecplayer[id]), buf, sizeof(g_vecplayer[id]));
 				m.unlock();
+				cout << "SC_PACKET_YOUR_PLAYERINFO recv" << endl;
 			}
 			// 순서 문제 때문에 추가.
 			/// Field 씬일 때, CField가 가지고 있는 CPlayer에 직접 접근하여 
@@ -237,6 +251,7 @@ void RecvPacket()
 				m.lock();
 				memcpy(&(g_vecplayer[id].pt), buf, sizeof(g_vecplayer[id].pt));
 				m.unlock();
+				cout << "SC_PACKET_PLAYERINFO_INCHANGINGSCENE recv" << endl;
 			}
 			// 순서 문제 때문에 추가.
 			/// Field 씬일 때, CField가 가지고 있는 CPlayer에 직접 접근하여 
@@ -271,21 +286,6 @@ void RecvPacket()
 			g_vecplayer[id].ready = true;
 		}
 		break;
-		case SC_PACKET_ALLPLAYER_READY:
-		{
-			//g_bIsSceneChange = true;
-			//g_eScene = SCENE_STAGE1;
-			//CSceneMgr::GetInstance()->SetScene(SCENE_STAGE1);
-
-			//CScene* pScene = CSceneMgr::GetInstance()->GetScene();
-			//dynamic_cast<CField*>(pScene)->setNextScene();
-
-			//--
-			CScene* pScene = CSceneMgr::GetInstance()->GetScene();
-			if(pScene != nullptr)
-				pScene->setNextScene();
-		}
-		break;
 		}
 	}
 
@@ -314,6 +314,10 @@ void CMaingame::Update(void)
 {
 	CSceneMgr::GetInstance()->Update();
 	CSoundMgr::GetInstance()->UpdateSound();
+
+	for (int i = 0; i < 2; ++i) {
+		cout << i << "g_vecplayer[i].pt.x: " << g_vecplayer[i].pt.x << endl << endl;
+	}
 }
 
 void CMaingame::Render(void)
@@ -365,7 +369,7 @@ void CMaingame::InitializeNetwork(void)
 		return;
 
 	g_sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (g_sock == INVALID_SOCKET) 
+	if (g_sock == INVALID_SOCKET) // 생성 실패시
 		MessageBoxW(g_hWnd, L"socket()", MB_OK, MB_OK);
 
 	recvThread = thread{ RecvPacket };

@@ -193,10 +193,6 @@ void CMakingPlayer::Release()
 
 }
 
-void CMakingPlayer::setNextScene()
-{
-}
-
 int CMakingPlayer::recvn(SOCKET s, char* buf, int len, int flags)
 {
 	int received;

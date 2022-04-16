@@ -11,6 +11,4 @@ public:
 	virtual int Update() = 0;
 	virtual void Render(HDC hDc) = 0;
 	virtual void Release() = 0;
-
-	virtual void setNextScene() = 0;
 };
