@@ -155,18 +155,6 @@ void CPlayer::Render(HDC hDc)
 		RGB(0, 255, 0));
 
 
-	//TransparentBlt(hDc,
-	//	static_cast<int>(m_tRect.left + g_fScrollX),
-	//	static_cast<int>(m_tRect.top + g_fScrollY),
-	//	static_cast<int>(m_tInfo.size.cx),
-	//	static_cast<int>(m_tInfo.size.cy),
-	//	pBit->GetMemDC(),
-	//	static_cast<int>(m_tFrame.iFrameStart * m_tInfo.size.cx),
-	//	static_cast<int>(m_tFrame.iScene * m_tInfo.size.cy),
-	//	static_cast<int>(m_tInfo.size.cx),
-	//	static_cast<int>(m_tInfo.size.cy),
-	//	RGB(0, 255, 0));
-
 	// 히트박스
 	if (GetAsyncKeyState('2'))
 	{
@@ -721,8 +709,6 @@ void CPlayer::SendSceneChangePacket()
 		MessageBox(g_hWnd, L"send()", L"send - 고정 - CS_PACKET_PLAYERINFO_INCHANGINGSCENE", MB_OK);
 		g_bIsProgramEnd = true;	// 프로그램 종료
 	}
-	else
-		cout << "CS_PACKET_PLAYERINFO_INCHANGINGSCENE send()" << endl;
 }
 
 void CPlayer::SendSkillCreatePacket(SKILL_TYPE eType)

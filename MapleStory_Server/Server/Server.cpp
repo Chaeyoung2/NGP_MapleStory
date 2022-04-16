@@ -3,7 +3,6 @@
 vector<SOCKET> g_vecsocket;
 vector<PLAYERINFO> g_vecplayer;
 vector<SKILLINFO> g_vecskill;
-bool g_arrayconnected[MAX_USER]; // connected 배열 (id 부여 위함)
 
 MONSTERPACKET g_monster_packet;
 
@@ -30,7 +29,7 @@ void RecvThread(SOCKET client_sock)
 		ZeroMemory(&packetinfo, sizeof(packetinfo));
 		retval = recvn(client_sock, buf, BUFSIZE, 0);
 		if (retval == SOCKET_ERROR) {
-			//err_display("packetinfo recv()");
+			err_display("packetinfo recv()");
 			break;
 		}
 		else
@@ -42,7 +41,6 @@ void RecvThread(SOCKET client_sock)
 			ZeroMemory(buf, sizeof(buf));	 
 			retval = recvn(client_sock, buf, packetinfo.size, 0);
 			if (retval == SOCKET_ERROR) {
-				//err_display("intial playerinfo recv()");
 				break;
 			}
 			else {
@@ -50,20 +48,18 @@ void RecvThread(SOCKET client_sock)
 				memcpy(&playerinfo, buf, sizeof(playerinfo));
 			}
 
-			// 2. playerinfo의 나머지 멤버 변수들은 서버에서 채워준다. (id, size, hp, mp, ..)
-			// id 부여
 			int id = GetEmptyID();
 			if (-1 == id) {
-				cout << "user가 다 찼습니다." << std::endl;
+				cout << "user가 다 찼습니다." << endl;
 				closesocket(client_sock);
 				break;
 			}
 			playerinfo.id = id;
 			playerinfo.connected = true;
 			playerinfo.ready = false;
-			playerinfo.pt.x = 100.f; // 초기 좌표
-			playerinfo.pt.y = 496.f;
-			playerinfo.hp = 30000;
+			playerinfo.pt.x = START_X; 
+			playerinfo.pt.y = START_Y;
+			playerinfo.hp = START_HP;
 			playerinfo.size.cx = 100.f;
 			playerinfo.size.cy = 100.f;
 			playerinfo.attackAccValue = 0.f;
@@ -367,18 +363,42 @@ void RecvThread(SOCKET client_sock)
 		break;
 		case CS_PACKET_PLAYER_READY:
 		{
-			// 고정 길이만 보냄
-			if (g_vecplayer.size() >= 2) {
+			g_vecplayer[packetinfo.id].ready = true;
+			
+			if (g_vecplayer.size() >= MAX_USER) {
 				PACKETINFO packetinfo_send = { SC_PACKET_PLAYER_READY, sizeof(bool), packetinfo.id };
 				char buf_send[BUFSIZE] = "";
 				memcpy(buf_send, &packetinfo_send, sizeof(packetinfo_send));
 				int sendtoid = !packetinfo.id;
 				int retval = send(g_vecsocket[sendtoid], buf_send, BUFSIZE, 0);
 				if (retval == SOCKET_ERROR) {
-					err_display("recvn() - CS_PACKET_SKILL_CREATE");
+					err_display("send() - CS_PACKET_PLAYER_READY");
 					return;
 				}
+
+
+				// 모든 플레이어가 ready 상태면
+				bool IsAllReady = true;
+				for (int i = 0; i < MAX_USER; i++) {
+					if (g_vecplayer[i].ready == false)
+						IsAllReady = false;
+				}
+
+				if (IsAllReady == true) {
+					PACKETINFO packetinfo = {};
+					packetinfo.type = SC_PACKET_ALLPLAYER_READY;
+					ZeroMemory(buf, sizeof(buf));
+					memcpy(buf, &packetinfo, sizeof(packetinfo));
+					for (int i = 0; i < MAX_USER; i++) {
+						retval = send(g_vecsocket[i], buf, BUFSIZE, 0);
+						if (retval == SOCKET_ERROR) {
+							err_display("send() - SC_PACKET_ALLPLAYER_READY");
+							break;
+						}
+					}
+				}
 			}
+			
 		}
 		break;
 		}
@@ -635,6 +655,16 @@ int GetEmptyID()
 		if (id == MAX_USER - 1) return -1;
 	}
 	return id;
+}
+
+bool isAllConnected()
+{
+	bool allconnected = true;
+	for (int i = 0; i < MAX_USER; i++) {
+		if (g_vecplayer[i].connected == false)
+			allconnected = false;
+	}
+	return allconnected;
 }
 
 

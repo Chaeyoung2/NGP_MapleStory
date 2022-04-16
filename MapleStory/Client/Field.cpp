@@ -67,21 +67,21 @@ int CField::Update()
 {
 	CObjMgr::GetInstance()->UpdateObj();
 
-	// 모든 플레이어가 대기 상태가 되면 씬 넘어가기
-	for (int i = 0; i < g_vecplayer.size(); ++i)
-	{
-		if (g_vecplayer[i].id == -1)	// 플레이어 값이 있는지 확인
-			break;
-		if (g_vecplayer[i].ready == false)	// 한 플레이어가 대기 상태가 아니라면 넘어가기
-			break;
+	//// 모든 플레이어가 대기 상태가 되면 씬 넘어가기
+	//for (int i = 0; i < g_vecplayer.size(); ++i)
+	//{
+	//	if (g_vecplayer[i].id == -1)	// 플레이어 값이 있는지 확인
+	//		break;
+	//	if (g_vecplayer[i].ready == false)	// 한 플레이어가 대기 상태가 아니라면 넘어가기
+	//		break;
 
-		if (i + 1 == g_vecplayer.size())	// 모든 플레이어가 대기 상태라면
-		{
-			g_bIsSceneChange = true;
-			g_eScene = SCENE_STAGE1;
-			CSceneMgr::GetInstance()->SetScene(SCENE_STAGE1);
-		}
-	}
+	//	if (i + 1 == g_vecplayer.size())	// 모든 플레이어가 대기 상태라면
+	//	{
+	//		g_bIsSceneChange = true;
+	//		g_eScene = SCENE_STAGE1;
+	//		CSceneMgr::GetInstance()->SetScene(SCENE_STAGE1);
+	//	}
+	//}
 
 	return 0;
 }
@@ -103,4 +103,12 @@ void CField::Render(HDC hDc)
 void CField::Release()
 {
 	CObjMgr::GetInstance()->ReleaseAll();
+}
+
+void CField::setNextScene()
+{
+
+	g_bIsSceneChange = true;
+	g_eScene = SCENE_STAGE1;
+	CSceneMgr::GetInstance()->SetScene(SCENE_STAGE1);
 }

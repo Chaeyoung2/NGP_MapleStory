@@ -103,6 +103,7 @@ enum PACKET_TYPE { // CS - Client to Server. SC - Server to Client.
 	SC_PACKET_PLAYERINFO_INCHANGINGSCENE, // 서버: 씬 바뀌었다며		? 이걸로 플레이어 정보 초기화해라.
 	SC_PACKET_SKILL_MOVE,
 	SC_PACKET_PLAYER_READY,
+	SC_PACKET_ALLPLAYER_READY
 
 
 };

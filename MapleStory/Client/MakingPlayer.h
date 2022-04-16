@@ -13,6 +13,10 @@ public:
 	virtual int Update();
 	virtual void Render(HDC hDc);
 	virtual void Release();
+
+
+	virtual void setNextScene();
+public:
 	
 	 int recvn(SOCKET, char* , int, int);
 	 void err_display(const char *);

@@ -142,4 +142,7 @@ void CLeafCommunication::SendReadyPacket()
 		MessageBox(g_hWnd, L"send()", L"send() - °¡º¯ - CS_PACKET_PLAYER_READY", NULL);
 		return;
 	}
+	
+	// ---
+
 }

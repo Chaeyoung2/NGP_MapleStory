@@ -14,6 +14,8 @@ public:
 	virtual void Render(HDC hDc);
 	virtual void Release();
 
+	virtual void setNextScene();
+
 private:
 	// 서버 추가.
 	HDC		m_hDC;
